@@ -1,0 +1,15 @@
+{
+        "id": "",
+        "idx": {
+            "timestamp": "1:2",
+            "value": ""
+        },
+        "redir": {
+            "timestamp": "1:2",
+            "value": 0
+        },
+        "template": {
+            "timestamp": "1:2",
+            "value": "Blank"
+        }
+}
