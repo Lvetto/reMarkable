@@ -1,0 +1,6 @@
+[submodule "ui/graphics-lib"]
+	path = ui/graphics-lib
+	url = https://github.com/Lvetto/graphics-lib.git
+[submodule "ui/json"]
+	path = ui/json
+	url = https://github.com/nlohmann/json.git
