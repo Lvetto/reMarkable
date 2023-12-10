@@ -8,6 +8,10 @@
 #include <array>
 #include <vector>
 #include <fstream>
+#include <future>
+#include <chrono>
+#include<unistd.h>
+
 #include "graphics-lib/include.h"
 #include "json/single_include/nlohmann/json.hpp"
 
@@ -23,6 +27,11 @@ string dir = "";
 vector<string> dir_history;
 json file_data;
 win_data wdata;
+string IP = "";
+bool ShouldUpdateList = false;
+future<void> ListUpdater;
+bool IsLoading = false;
+int counter = 0;
 
 string run_cmd(const char* cmd) {
     string out;     // stores value to be returned
@@ -141,14 +150,47 @@ void BackDir() {
     elements = get_elements(wdata, file_data, dir, 50, 10);
 }
 
+void UpdateList() {
+    IsLoading = true;
+
+    sleep(15);
+
+    IsLoading = false;
+
+    return;
+
+
+    cout << "Updating file list. This might take a while" << endl;
+
+    IsLoading = true;
+
+    string command = "python3 ../../driver/driver.py --ip " + IP + " -l" ;
+    string out = run_cmd(command.c_str());
+
+    if (out == "[]" or out[0] != '[')    return;
+
+    ofstream file("../dump.json", std::ios::out | std::ios::trunc);
+    if (!file.is_open())    throw std::runtime_error("Unable to open file");
+
+    cout << "Done updating" << endl;
+
+    IsLoading = false;
+
+    file.write(out.c_str(), out.size());
+    file_data = load_file("../dump.json");
+}
+
+void LaunchListUpdate() {
+    ShouldUpdateList = true;
+}
+
 int main() {
     init(&wdata, SCREEN_HEIGHT, SCREEN_WIDTH);
 
-    //td::string pythonCommand = "time python3 ../../driver/driver.py --ip 192.168.217.1 -l";
-    //cout << run_cmd(pythonCommand.c_str()) << endl;
-
-    //cout << "directory: " << run_cmd("pwd") << endl;
-    //cout << run_cmd("ls .. | grep default") << endl;
+    //string command = "python3 ../../driver/driver.py --ip " + IP + " -l" ;
+    //string out = run_cmd(command.c_str());
+    //cout << out << endl;
+    //UpdateList();
 
     dir_history.push_back("");
 
@@ -166,6 +208,10 @@ int main() {
     back.onClick_func = &BackDir;
     buttons.push_back(back);
 
+    Button update(1350 - 500 + 15, 50, 0, 0, "UPDATE FILE LIST");
+    update.onClick_func = &LaunchListUpdate;
+    buttons.push_back(update);
+
 
     while (running) {
         HandleEvents(elements, buttons, dir);
@@ -181,14 +227,32 @@ int main() {
             elements = get_elements(wdata, file_data, dir, 50, 10);
             dir_history.push_back(dir);
         }
-    }
 
+        if (ShouldUpdateList) {
+            ListUpdater = async(launch::async, UpdateList);
+            ShouldUpdateList = false;
+        }
+
+    }
+    SDL_Quit();
     return 0;
 }
 
 void Draw(win_data wdata, vector<file_element> elements, vector<Button> buttons) {
     for (auto &el: elements)    el.draw(wdata);
     for (auto &button: buttons)    button.draw(wdata.renderer);
+
+    if (IsLoading) {
+            SDL_SetRenderDrawColor(wdata.renderer, 250, 0, 0, 255);
+            drawCircle(wdata.renderer, 825, 65, static_cast<int>(counter / 100.0));
+            SDL_SetRenderDrawColor(wdata.renderer, 0, 250, 0, 255);
+            drawCircle(wdata.renderer, 840, 65, static_cast<int>(counter / 100.0));
+            SDL_SetRenderDrawColor(wdata.renderer, 0, 0, 250, 255);
+            drawCircle(wdata.renderer, 855, 65, static_cast<int>(counter / 100.0));
+
+            counter = (counter + 1) % 500;
+        }
+
     return;
 }
 
